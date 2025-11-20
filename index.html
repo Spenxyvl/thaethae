@@ -2,16 +2,15 @@
 <html lang="en">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Smooth Love</title>
+<title>Love Animation Light</title>
 
 <style>
   html, body {
     margin: 0;
     padding: 0;
     overflow: hidden;
-    background: radial-gradient(circle at center, #180030, #000);
+    background: #000;
     font-family: Arial, sans-serif;
-    color: white;
   }
 
   #rotateNotice {
@@ -22,9 +21,9 @@
     display: none;
     justify-content: center;
     align-items: center;
+    z-index: 9999;
     text-align: center;
     padding: 20px;
-    z-index: 9999;
     font-size: 22px;
   }
 
@@ -35,30 +34,15 @@
 
   #bear {
     position: absolute;
-    bottom: 20px;
-    left: 20px;
+    bottom: 25px;
+    left: 25px;
     width: 80px;
     z-index: 20;
-    transition: transform .2s;
+    transition: transform 0.2s;
   }
 
   #bear:active {
-    transform: scale(1.2);
-  }
-
-  #textBox {
-    position: absolute;
-    top: 50%;
-    width: 100%;
-    font-size: 45px;
-    text-align: center;
-    transform: translateY(-50%);
-    opacity: 0;
-    animation: fadeIn 4s ease forwards;
-  }
-
-  @keyframes fadeIn {
-    to { opacity: 1; }
+    transform: scale(1.15);
   }
 </style>
 </head>
@@ -66,89 +50,193 @@
 <body>
 
 <div id="rotateNotice">Please rotate your phone to landscape, baby ❤️</div>
-
 <canvas id="canvas"></canvas>
-<div id="textBox">I love you<br>Khisa khin</div>
 
 <img id="bear" src="https://i.pinimg.com/originals/cf/e2/66/cfe2664925719a18a078c8c1b7552b9d.gif">
 
 <script>
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
-const rotateNotice = document.getElementById('rotateNotice');
-const bear = document.getElementById('bear');
+/* ============================================================
+   SETUP
+============================================================ */
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const bear = document.getElementById("bear");
+const rotateNotice = document.getElementById("rotateNotice");
 
-function resize() {
+const message = ["I love you", "Khisa khin ❤️"];
+let stars = [];
+let dots = [];
+let targets = [];
+let currentTargetIndex = 0;
+
+const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+/* ============================================================
+   ORIENTATION CHECK
+============================================================ */
+function checkOrientation() {
+  const portrait = window.innerHeight > window.innerWidth;
+
+  if (isMobile && portrait) {
+    rotateNotice.style.display = "flex";
+    bear.style.display = "none";
+    canvas.style.display = "none";
+  } else {
+    rotateNotice.style.display = "none";
+    bear.style.display = "block";
+    canvas.style.display = "block";
+  }
+}
+
+window.addEventListener("resize", () => {
+  resizeCanvas();
+  checkOrientation();
+});
+
+/* ============================================================
+   RESIZE + SETUP
+============================================================ */
+function resizeCanvas() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 
-  const portrait = window.innerHeight > window.innerWidth;
-  if (portrait) {
-    rotateNotice.style.display = "flex";
-    canvas.style.display = "none";
-    bear.style.display = "none";
-  } else {
-    rotateNotice.style.display = "none";
-    canvas.style.display = "block";
-    bear.style.display = "block";
+  generateStars();
+  generateTextTargets();
+}
+
+resizeCanvas();
+checkOrientation();
+
+/* ============================================================
+   BACKGROUND STARS (SUPER LIGHT)
+============================================================ */
+function generateStars() {
+  stars = [];
+  const count = isMobile ? 40 : 60;
+
+  for (let i = 0; i < count; i++) {
+    stars.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      r: Math.random() * 1.2 + 0.3,
+      a: Math.random(),
+      d: Math.random() * 0.02 + 0.005
+    });
   }
 }
-window.addEventListener('resize', resize);
-resize();
 
-// SIMPLE STARFIELD (super ringan)
-let stars = [];
-for (let i = 0; i < 40; i++) {
-  stars.push({
-    x: Math.random() * canvas.width,
-    y: Math.random() * canvas.height,
-    r: Math.random()*1.5 + 0.3,
-    a: Math.random(),
-    d: Math.random()*0.02 + 0.005
-  });
-}
-
-function draw() {
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  // minimal stars
+function drawStars() {
   stars.forEach(s => {
     s.a += s.d;
-    if (s.a > 1 || s.a < 0) s.d = -s.d;
+    if (s.a > 1 || s.a < 0) s.d *= -1;
+
     ctx.globalAlpha = s.a;
     ctx.fillStyle = "white";
     ctx.beginPath();
-    ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
     ctx.fill();
     ctx.globalAlpha = 1;
   });
-
-  requestAnimationFrame(draw);
 }
-draw();
 
-// SIMPLE CLICK HEART (NO PHYSICS)
-canvas.addEventListener("pointerdown", e => {
-  const x = e.clientX;
-  const y = e.clientY;
+/* ============================================================
+   TARGET DOT GENERATOR (VERY LIGHT)
+============================================================ */
+function generateTextTargets() {
+  targets = [];
 
-  const span = document.createElement("div");
-  span.innerHTML = "❤️";
-  span.style.position = "fixed";
-  span.style.left = x + "px";
-  span.style.top = y + "px";
-  span.style.fontSize = "20px";
-  span.style.opacity = "1";
-  span.style.transition = "1s ease";
-  document.body.appendChild(span);
+  const tempCanvas = document.createElement("canvas");
+  const tctx = tempCanvas.getContext("2d");
+  const fs = isMobile ? 55 : 70;
 
-  setTimeout(() => {
-    span.style.top = (y - 40) + "px";
-    span.style.opacity = "0";
-    setTimeout(()=> span.remove(), 1000);
-  }, 10);
+  tempCanvas.width = canvas.width;
+  tempCanvas.height = canvas.height;
+
+  tctx.font = `bold ${fs}px Arial`;
+  tctx.fillStyle = "#fff";
+  tctx.textAlign = "center";
+
+  const totalLines = message.length;
+  const startY = canvas.height / 2 - (totalLines - 1) * fs * 0.7;
+
+  message.forEach((line, i) => {
+    tctx.fillText(line, canvas.width / 2, startY + i * fs * 1.2);
+  });
+
+  const img = tctx.getImageData(0, 0, canvas.width, canvas.height).data;
+
+  for (let y = 0; y < canvas.height; y += 6) {
+    for (let x = 0; x < canvas.width; x += 6) {
+      const idx = (y * canvas.width + x) * 4;
+      if (img[idx + 3] > 180) {
+        targets.push({ x, y });
+      }
+    }
+  }
+
+  currentTargetIndex = 0;
+}
+
+/* ============================================================
+   DOT SHOOTER (BEAR → HEART → TEXT)
+============================================================ */
+function shootDot() {
+  if (currentTargetIndex >= targets.length) return;
+
+  const t = targets[currentTargetIndex++];
+
+  dots.push({
+    x: bear.offsetLeft + 50,
+    y: canvas.height - 70,
+    tx: t.x,
+    ty: t.y,
+    vx: 0,
+    vy: 0
+  });
+}
+
+bear.addEventListener("pointerdown", () => {
+  // burst little heart faster
+  for (let i = 0; i < 4; i++) shootDot();
 });
-</script>
 
+/* ============================================================
+   DRAW DOTS MOVEMENT (LIGHT)
+============================================================ */
+function drawDots() {
+  dots.forEach(dot => {
+    const dx = dot.tx - dot.x;
+    const dy = dot.ty - dot.y;
+
+    dot.vx += dx * 0.01;
+    dot.vy += dy * 0.01;
+    dot.vx *= 0.90;
+    dot.vy *= 0.90;
+
+    dot.x += dot.vx;
+    dot.y += dot.vy;
+
+    ctx.font = "16px Arial";
+    ctx.fillText("❤️", dot.x, dot.y);
+  });
+}
+
+/* ============================================================
+   MAIN LOOP
+============================================================ */
+function animate() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  drawStars();
+  drawDots();
+
+  // auto shoot slowly
+  if (Math.random() < 0.07) shootDot();
+
+  requestAnimationFrame(animate);
+}
+
+animate();
+</script>
 </body>
 </html>
